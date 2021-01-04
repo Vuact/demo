@@ -1,3 +1,4 @@
 module.exports.hello = (req, res) => {
-	res.send('hello, express');
+	res.render('index', {});
 };
+
