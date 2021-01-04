@@ -6,6 +6,7 @@ const error = require('./middleware/error');
 
 const app = express();
 
+app.use('/static', express.static('public'));
 app.use(log());  //发日记
 app.use(render(app)); //渲染 
 
