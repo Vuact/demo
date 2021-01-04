@@ -2,6 +2,10 @@
 - 路由routes
 - 创建controllers：路由处理器回调函数
 - 模板引擎
+- 中间件与next
+- 错误处理
+
+项目源码链接：[狠狠戳我](https://github.com/Vuact/dome/tree/master/express/helloExpress)
 
 <br>
 
@@ -184,6 +188,8 @@ module.exports.register = (app) => {
 
 我们再将 路由的分发逻辑 和 路由的回调函数逻辑(即控制器) 进行分离。
 
+即将`routes/index.js`和`routes/users.js`中的回调逻辑拆分出去，放到新创建的controllers文件夹下。
+
 在根目录下创建空文件夹 controllers，在 controllers 目录下创建 index.js 和 users.js。并修改`routes/index.js`、`routes/users.js`，最后代码如下：
 
 **routes/index.js**
@@ -246,62 +252,82 @@ npm i ejs --save
 **index.js**
 
 ```js
-const path = require('path')
-const express = require('express')
-const app = express()
-const indexRouter = require('./routes/index')
-const userRouter = require('./routes/users')
+const path = require('path');
+const express = require('express');
+const routes = require('./routes/main');
 
-app.set('views', path.join(__dirname, 'views'))// 设置存放模板文件的目录
-app.set('view engine', 'ejs')// 设置模板引擎为 ejs
+const app = express();
 
-app.use('/', indexRouter)
-app.use('/users', userRouter)
+app.set('views', path.join(__dirname, 'views')); // 设置存放模板文件的目录
+app.set('view engine', 'ejs'); // 设置模板引擎为 ejs
 
-app.listen(3000)
+routes.register(app);
+
+app.listen(3000);
 ```
 
 通过 `app.set` 设置模板引擎为 ejs 和存放模板的目录。
 
-在 根目录 下新建 views 文件夹，在 views 下新建 users.ejs，添加如下代码：
+在 根目录 下新建 views 文件夹，在 views 下新建 `index.ejs`和`users.ejs`，添加如下代码：
 
 **views/users.ejs**
 
 ```html
 <!DOCTYPE html>
 <html>
-  <head>
-    <style type="text/css">
-      body {padding: 50px;font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;}
-    </style>
-  </head>
-  <body>
-    <h1><%= name.toUpperCase() %></h1>
-    <p>hello, <%= name %></p>
-  </body>
+<head></head>
+<body>
+   <h1>
+      <%= name.toUpperCase() %>
+   </h1>
+   <p>hello, <%= name %></p>
+</body>
 </html>
 ```
 
-修改 routes/users.js 如下：
+**views/index.ejs**
 
-**routes/users.js**
-
-```js
-const express = require('express')
-const router = express.Router()
-
-router.get('/:name', function (req, res) {
-  res.render('users', {
-    name: req.params.name
-  })
-})
-
-module.exports = router
+```html
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+   <h1>
+      hello, express
+   </h1>
+</body>
+</html>
 ```
 
-通过调用 `res.render` 函数渲染 ejs 模板，res.render 第一个参数是模板的名字，这里是 users 则会匹配 views/users.ejs，第二个参数是传给模板的数据，这里传入 name，则在 ejs 模板中可使用 name。`res.render` 的作用就是将模板和数据结合生成 html，同时设置响应头中的 `Content-Type: text/html`，告诉浏览器我返回的是 html，不是纯文本，要按 html 展示。现在我们访问 `localhost:3000/users/haha`，如下图所示：
+修改 controllers/index.js 和 controllers/users.js 如下：
 
-![](./img/3.3.1.png)
+**controllers/index.js**
+
+```js
+module.exports.sayName = (req, res) => {
+   res.render('index', {});
+};
+```
+
+**controllers/users.js**
+
+```js
+module.exports.sayName = (req, res) => {
+   res.render('users', {
+      name: req.params.name
+   });
+};
+```
+
+以users为例：
+
+通过调用 `res.render` 函数渲染 ejs 模板，res.render：
+- 第一个参数：是模板的名字，这里是 users 则会匹配 views/users.ejs
+- 第二个参数：是传给模板的数据，这里传入 name，则在 ejs 模板中可使用 name。
+
+`res.render` 的作用就是将模板和数据结合生成 html，同时设置响应头中的 `Content-Type: text/html`，告诉浏览器我返回的是 html，不是纯文本，要按 html 展示。现在我们访问 `http://localhost:3000/users/bty`，如下图所示：
+
+![](https://github.com/Vuact/Blog/blob/main/base/node/images/4E7E6FA50374C291C4466779DCDB4B33.jpg?raw=true)
 
 上面代码可以看到，我们在模板 `<%= name.toUpperCase() %>` 中使用了 JavaScript 的语法 `.toUpperCase()` 将名字转化为大写，那这个 `<%= xxx %>` 是什么东西呢？ejs 有 3 种常用标签：
 
@@ -321,7 +347,7 @@ supplies: ['mop', 'broom', 'duster']
 
 **Template**
 
-```ejs
+```nunjucks
 <ul>
 <% for(var i=0; i<supplies.length; i++) {%>
    <li><%= supplies[i] %></li>
@@ -375,6 +401,13 @@ supplies: ['mop', 'broom', 'duster']
   <p>hello, <%= name %></p>
 <%- include('footer') %>
 ```
+**views/index.ejs**
+
+```ejs
+<%- include('header') %>
+   <h1>hello, express</h1>
+<%- include('footer') %>
+```
 
 我们将原来的 users.ejs 拆成出了 header.ejs 和 footer.ejs，并在 users.ejs 通过 ejs 内置的 include 方法引入，从而实现了跟以前一个模板文件相同的功能。
 
@@ -385,10 +418,259 @@ supplies: ['mop', 'broom', 'duster']
 
 > 注意：要用 `<%- include('header') %>` 而不是 `<%= include('header') %>`
 
+
+
+<br>
+
+-----
+
+
+
+此时我们的项目目录结构：
+![](https://github.com/Vuact/Blog/blob/main/base/node/images/55BB6ED600A20526106AC2A25D3D8F37.jpg?raw=true)
+
+然后我们再看以上目录之间的关系:
+
 <br>
 
 ![](https://mdn.mozillademos.org/files/16453/Express_MVC.png)
 
-- 路由：把需要支持的请求（以及请求 URL 中包含的任何信息）转发到适当的控制器函数。
-- 控制器：从模型中获取请求的数据，创建一个 HTML 页面显示出数据，并将页面返回给用户，以便在浏览器中查看。
-- 视图（模板）：供控制器用来渲染数据。
+- 路由routes：把需要支持的请求（以及请求 URL 中包含的任何信息）转发到适当的控制器函数。
+- 控制器controllers：从模型中获取请求的数据，创建一个 HTML 页面显示出数据，并将页面返回给用户，以便在浏览器中查看。
+- 视图（模板）views：供控制器用来渲染数据。
+
+-----
+
+<br>
+
+# 五、中间件与next
+
+前面我们讲解了 express 中路由和模板引擎 ejs 的用法，但 express 的精髓并不在此，在于中间件的设计理念。
+
+## 1、概念讲解
+
+express 中的中间件（middleware）就是用来处理请求的，当一个中间件处理完，可以通过调用 `next()` 传递给下一个中间件，如果没有调用 `next()`，则请求不会往下传递，如内置的 `res.render` 其实就是渲染完 html 直接返回给客户端，没有调用 `next()`，从而没有传递给下一个中间件。看个小例子，修改 index.js 如下：
+
+**index.js**
+
+```js
+const express = require('express')
+const app = express()
+
+app.use(function (req, res, next) {
+  console.log('1')
+  next()
+})
+
+app.use(function (req, res, next) {
+  console.log('2')
+  res.status(200).end()
+})
+
+app.listen(3000)
+```
+
+此时访问 `localhost:3000`，终端会输出：`1 2`
+
+
+通过 `app.use` 加载中间件，在中间件中通过 next 将请求传递到下一个中间件，next 可接受一个参数接收错误信息，如果使用了 `next(error)`，则会返回错误而不会传递到下一个中间件，修改 index.js 如下：
+
+**index.js**
+
+```js
+const express = require('express')
+const app = express()
+
+app.use(function (req, res, next) {
+  console.log('1')
+  next(new Error('haha'))
+})
+
+app.use(function (req, res, next) {
+  console.log('2')
+  res.status(200).end()
+})
+
+app.listen(3000)
+```
+
+此时访问 `http://localhost:3000/`，终端会输出错误信息：
+
+![](https://github.com/Vuact/Blog/blob/main/base/node/images/FA32578D0D381B72E47F254461EA9B0C.jpg?raw=true)
+
+浏览器会显示：
+
+![](https://github.com/Vuact/Blog/blob/main/base/node/images/03176056D4BEA7EFA0BE94EE0D6C267D.jpg?raw=true)
+
+> 小提示：`app.use` 有非常灵活的使用方式，详情见 [官方文档](http://expressjs.com/en/4x/api.html#app.use)。
+
+express 有成百上千的第三方中间件，在开发过程中我们首先应该去 npm 上寻找是否有类似实现的中间件，尽量避免造轮子，节省开发时间。下面给出几个常用的搜索 npm 模块的网站：
+
+1. [http://npmjs.com](http://npmjs.com)(npm 官网)
+2. [http://node-modules.com](http://node-modules.com)
+3. [https://npms.io](https://npms.io)
+4. [https://nodejsmodules.org](https://nodejsmodules.org)
+
+> 小提示：express@4 之前的版本基于 connect 这个模块实现的中间件的架构，express@4 及以上的版本则移除了对 connect 的依赖自己实现了，理论上基于 connect 的中间件（通常以 `connect-` 开头，如 `connect-mongo`）仍可结合 express 使用。
+
+> 注意：中间件的加载顺序很重要！比如：通常把日志中间件放到比较靠前的位置，后面将会介绍的 `connect-flash` 中间件是基于 session 的，所以需要在 `express-session` 后加载。
+
+<br>
+
+## 2、接着上面的项目
+
+我们接着上面的项目来添加中间件，需求：
+
+- （1）将上面的ejs模板渲染抽象为 `渲染中间件`render.js
+- （2）在每次启动程序时添加 `日记上报中间件`log.js
+
+首先我们在根目录创建 `middleware` 文件，并在其中新建 render.js 和 log.js 文件，如下：
+
+**middleware/render.js**
+
+```js
+//渲染中间件
+
+const path = require('path');
+
+module.exports = (app) => {
+   return (req, res, next) => {
+      app.set('views', path.join(process.cwd(), '/views')); // 设置存放模板文件的目录 (process.cwd()获得当前执行node命令时候的文件夹目录名)
+      app.set('view engine', 'ejs'); // 设置模板引擎为 ejs
+      next();
+   };
+};
+```
+
+**middleware/log.js**
+
+```js
+//日记上报中间件
+module.exports = () => {
+   return (req, res, next) => {
+      console.log('send log');
+      next();
+   };
+};
+```
+
+然后再修改index.js文件：
+
+**index.js**
+```js
+const express = require('express');
+const routes = require('./routes/main');
+const log = require('./middleware/log');
+const render = require('./middleware/render');
+
+const app = express();
+
+app.use(log());  //发日记
+app.use(render(app)); //渲染 
+
+routes.register(app);
+
+app.listen(3000);
+```
+从上面代码即：每次启动程序时，先日记上报，再配置模板引擎，最后注册路由。
+
+<br>
+
+# 六、错误处理
+
+## 1、简述
+
+上面 第五部分概念的第二个例子中，应用程序为我们自动返回了错误栈信息（express 内置了一个默认的错误处理器），假如我们想手动控制返回的错误内容，则需要加载一个自定义错误处理的中间件，修改 index.js 如下：
+
+**index.js**
+
+```js
+const express = require('express')
+const app = express()
+
+app.use(function (req, res, next) {
+  console.log('1')
+  next(new Error('haha'))
+})
+
+app.use(function (req, res, next) {
+  console.log('2')
+  res.status(200).end()
+})
+
+//错误处理
+//错误处理中间件函数的定义方式与其他中间件函数基本相同，差别在于错误处理函数有四个自变量而不是三个：(err, req, res, next)
+app.use(function (err, req, res, next) {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
+})
+
+app.listen(3000)
+```
+
+此时访问 `localhost:3000`，浏览器会显示 `Something broke!`。
+
+注意：`请在其他 app.use() 和路由调用之后，最后定义错误处理中间件`
+
+> 小提示：关于 express 的错误处理，详情见 [官方文档](https://expressjs.com/zh-cn/guide/error-handling.html)。
+
+<br>
+
+## 2、接着上面的项目
+
+新建 `middleware/error.js`文件，改写index.js，如下：
+
+**middleware/error.js**
+
+```js
+module.exports = {
+  //将请求和错误信息写入 stderr
+  logErrors(err, req, res, next) {
+    console.error(err.stack);
+    next(err);
+  },
+
+  //错误会显式传递到下一项
+  clientErrorHandler(err, req, res, next) {
+    if (req.xhr) {
+      res.status(500).send({ error: "Something failed!" });
+    } else {
+      next(err);
+    }
+  },
+
+  errorHandler(err, req, res, next) {
+    if (res.headersSent) {
+      //委托给 Express 中的缺省错误处理机制处理
+      return next(err);
+    }
+
+    //自定义处理
+    res.status(500);
+    res.render("error", { error: err });
+  }
+};
+```
+
+**index.js**
+
+```js
+const express = require('express');
+const routes = require('./routes/main');
+const log = require('./middleware/log');
+const render = require('./middleware/render');
+const error = require('./middleware/error');
+
+const app = express();
+
+app.use(log());  //发日记
+app.use(render(app)); //渲染 
+
+routes.register(app);
+
+app.use(error.logErrors);//将请求和错误信息写入 stderr
+app.use(error.clientErrorHandler);//错误会显式传递到下一项
+app.use(error.errorHandler);
+
+app.listen(3000);
+```
