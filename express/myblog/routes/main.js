@@ -2,7 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const LIST = [
-	require('./index')
+	require('./index'),
+	require('./signup'),
+	require('./signin'),
+	require('./signout'),
+	require('./posts'),
+	require('./comments')
 ];
 
 // module.exports = {
