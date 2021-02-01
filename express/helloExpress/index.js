@@ -7,7 +7,7 @@ const error = require('./middleware/error');
 const app = express();
 
 app.use('/static', express.static('public'));
-app.use(log());  //发日记
+app.use(log.sendUserMessage);  //发用户信息日记
 app.use(render(app)); //渲染 
 
 routes.register(app);
