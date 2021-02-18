@@ -3,6 +3,7 @@ const Mongolass = require('mongolass');
 const mongolass = new Mongolass();
 mongolass.connect(config.mongodb);
 
+//用户model
 exports.User = mongolass.model('User', {
 	name: { type: 'string', required: true },
 	password: { type: 'string', required: true },
@@ -30,3 +31,12 @@ mongolass.plugin('addCreatedAt', {
 		return result;
 	}
 });
+
+//文章model
+exports.Post = mongolass.model('Post', {
+	author: { type: Mongolass.Types.ObjectId, required: true },
+	title: { type: 'string', required: true },
+	content: { type: 'string', required: true },
+	pv: { type: 'number', default: 0 }
+});
+exports.Post.index({ author: 1, _id: -1 }).exec();// 按创建时间降序查看用户的文章列表

@@ -49,16 +49,16 @@ router.post("/signup/", checkNotLogin, (req, res, next) => {
 
 	// 待写入数据库的用户信息
 	let user = {
-		name: name,
-		password: password,
-		gender: gender,
-		bio: bio,
-		avatar: avatar
+		name,
+		password,
+		gender,
+		bio,
+		avatar
 	};
 
 	// 用户信息写入数据库
 	UserModel.create(user)
-		.then(function (result) {
+		.then((result) => {
 			// 此 user 是插入 mongodb 后的值，包含 _id
 			user = result.ops[0];
 
@@ -72,7 +72,7 @@ router.post("/signup/", checkNotLogin, (req, res, next) => {
 			// 跳转到首页
 			res.redirect('/posts');
 		})
-		.catch(function (e) {
+		.catch((e) => {
 			// 注册失败，异步删除上传的头像
 			fs.unlink(req.files.avatar.path, () => {
 				console.log('Deleted avatar');
