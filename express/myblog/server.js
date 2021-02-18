@@ -21,7 +21,10 @@ app.set('view engine', 'ejs');
 // 设置静态文件目录
 app.use(express.static(path.join(__dirname, 'public')));
 
-// session 中间件
+/* 
+	初始化 session 中间件 
+	session 中间件会在 req 上添加 session 对象，即 req.session 初始值为 {}
+*/
 app.use(session({
 	name: config.session.key, // 设置 cookie 中保存 session id 的字段名称
 	secret: config.session.secret, // 通过设置 secret 来计算 hash 值并放在 cookie 中，使产生的 signedCookie 防篡改
@@ -38,24 +41,30 @@ app.use(session({
 // flash 中间件，用来显示通知
 app.use(flash());
 
+// 处理表单及文件上传的中间件
+app.use(require('express-formidable')({
+	uploadDir: path.join(__dirname, 'public/images'), // 上传文件目录
+	keepExtensions: true // 保留后缀
+}));
+
 // 设置模板全局常量
 app.locals.blog = {
 	title: pkg.name,
 	description: pkg.description
-}
+};
 
 // 添加模板必需的三个变量
 app.use(function (req, res, next) {
-	res.locals.user = req.session.user
-	res.locals.success = req.flash('success').toString()
-	res.locals.error = req.flash('error').toString()
-	next()
-})
+	res.locals.user = req.session.user;
+	res.locals.success = req.flash('success').toString();
+	res.locals.error = req.flash('error').toString();
+	next();
+});
 
 // 路由
 routes.register(app);
 
 // 监听端口，启动程序
 app.listen(config.port, function () {
-	console.log(`${pkg.name} listening on port ${config.port}`)
+	console.log(`${pkg.name} listening on port ${config.port}`);
 });
