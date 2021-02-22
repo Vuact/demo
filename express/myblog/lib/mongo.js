@@ -18,13 +18,13 @@ const objectIdToTimestamp = require('objectid-to-timestamp');
 
 // 根据 id 生成创建时间 created_at
 mongolass.plugin('addCreatedAt', {
-	afterFind: function (results) {
-		results.forEach(function (item) {
+	afterFind(results) {
+		results.forEach((item) => {
 			item.created_at = moment(objectIdToTimestamp(item._id)).format('YYYY-MM-DD HH:mm');
 		})
 		return results;
 	},
-	afterFindOne: function (result) {
+	afterFindOne(result) {
 		if (result) {
 			result.created_at = moment(objectIdToTimestamp(result._id)).format('YYYY-MM-DD HH:mm');
 		}
@@ -40,3 +40,11 @@ exports.Post = mongolass.model('Post', {
 	pv: { type: 'number', default: 0 }
 });
 exports.Post.index({ author: 1, _id: -1 }).exec();// 按创建时间降序查看用户的文章列表
+
+//留言model
+exports.Comment = mongolass.model('Comment', {
+	author: { type: Mongolass.Types.ObjectId, required: true },
+	content: { type: 'string', required: true },
+	postId: { type: Mongolass.Types.ObjectId, required: true }
+});
+exports.Comment.index({ postId: 1, _id: 1 }).exec(); // 通过文章 id 获取该文章下所有留言，按留言创建时间升序
