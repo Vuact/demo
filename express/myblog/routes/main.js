@@ -24,3 +24,13 @@ module.exports.register = (app) => {
 		app.use(router);
 	}
 };
+
+module.exports.errorPage = (app) => {
+	// 404 page
+	app.use((req, res) => {
+		if (!res.headersSent) {
+			res.status(404).render("404");
+		}
+	});
+};
+

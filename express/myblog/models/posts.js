@@ -29,7 +29,7 @@ Post.plugin("addCommentsCount", {
 // 将 post 的 content 从 markdown 转换成 html
 Post.plugin('contentToHtml', {
 	afterFind(posts) {
-		return posts.map(function (post) {
+		return posts.map((post) => {
 			post.content = marked(post.content);
 			return post;
 		})
